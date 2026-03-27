@@ -32,8 +32,12 @@ class LichessClient:
                 if not line:
                     continue
                 data = json.loads(line)
+                print(data)
                 event = models.LichessEvent(data)
                 await queue.put(event)
+
+        for i in range(30): print("--------------RESETTING LICHESS STREAM ------------")
+        self.lichessStream(queue)
         #call endpoint, print status, read stream lines,
         #ignore empty lines, convert to json, put data in model structure,
         #put in queue

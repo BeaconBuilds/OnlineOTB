@@ -4,18 +4,20 @@ import random
 import time
 import webbrowser
 import models
-PYTHON_CHESS_TESTING = False
+import subprocess
+import os
 
 class ChessLogic:
     def __init__(self, lichessEvent):
         self.board = chess.Board()
         self.moves = []
-        self.makeSVG()
         self.color = chess.WHITE if lichessEvent.color == "white" else chess.BLACK 
         self.turn = chess.WHITE
         self.is_my_turn = True if self.color == self.turn else False
         self.gameID = lichessEvent.gameID
         
+        self.makeSVG()
+
     #make userMove def that checks validity of move and then gives ti back to main to give to client
 
     def validateMove(self, moveStr):
@@ -43,7 +45,6 @@ class ChessLogic:
 
 
     def handle_game_event(self, boardEvent):
-        print(self.board)
         if boardEvent.eventType == "gameState" and boardEvent.moves is not None:
             self.updateMoves(boardEvent.moves.split(" "))
         #make moves
@@ -74,7 +75,6 @@ class ChessLogic:
         newMovesNum = len(newMoves)
         currentMoveNum = len(self.moves)
         
-        print(f"we in the handle if\nCurrent MOve nUM: {currentMoveNum}\nnewmovesnum: {newMovesNum}")
         if currentMoveNum > newMovesNum:
             self.moves = []
             self.board = chess.Board()
@@ -84,81 +84,30 @@ class ChessLogic:
         if currentMoveNum < newMovesNum:
             movesToPush = newMoves[currentMoveNum:]
             for move in movesToPush:
-                print(f"pushing move: {move}")
                 self.board.push_uci(move)
         self.moves = newMoves
 
+
+
     def makeSVG(self):
         lastMove = None
+
         if len(self.moves) != 0:
             lastMove = chess.Move.from_uci(self.moves[len(self.moves)-1])
-        svg = chess.svg.board(board = self.board, lastmove = lastMove)
+        svg = chess.svg.board(board = self.board, lastmove = lastMove, orientation=self.color)
         with open("board.svg", "w", encoding="utf-8") as f:
             f.write(svg)
-
-    def setMoves():
-        pass
+        self.svg_to_png()
 
 
 
+    def svg_to_png(self, svg_path="board.svg", png_path="board.png", width=360, height=360):
+        rsvg_path = r"C:\msys64\mingw64\bin\rsvg-convert.exe"
 
-if PYTHON_CHESS_TESTING:
-
-    testBoard = chess.Board()
-    print(list(testBoard.generate_legal_captures()))
-
-
-    def displayBoard(b, lm):
-            svg_data = chess.svg.board(b, lastmove=lm)
-            with open("board.svg", "w") as f:
-                f.write(svg_data)    
-
-
-    foundCheckmate = False
-
-    while not foundCheckmate:
-        time.sleep(2)
-        board = chess.Board()
-        for i in range(100):
-            time.sleep(0)
-            #print(f"Turn: {board.fullmove_number}\tSide: {board.turn}\n")
-            #print(board)
-            if(board.is_game_over()):
-                print("FINAL MOVE")
-                print(f"Turn: {board.fullmove_number}\tSide: {"White" if board.turn==chess.WHITE else "Black"}\n" + f"{board}")
-                print(f"Checkmate: {str(board.is_checkmate())}\n"
-                    f"Stalemate: {str(board.is_stalemate())}\n"
-                    f"Game Over: {str(board.is_game_over())}\n"
-                    f"5-Fold: {str(board.is_fivefold_repetition())}\n"
-                    f"50-Moves: {str(board.is_fifty_moves())}\n"
-                    f"Legal Move Count: {board.legal_moves.count()}\n"
-                    f"Winning Side: {"White" if board.turn==chess.BLACK else "Black"}")
-                
-                if(board.is_checkmate() or board.is_stalemate()):
-                    foundCheckmate = False
-                    displayBoard(board, move)
-
-                break
-
-            capturingMoves = list(board.generate_legal_captures())
-            legalMoves = list(board.legal_moves)
-
-            if board.turn == chess.WHITE:
-                if capturingMoves: #if list is not empty
-                    move = random.choice(capturingMoves)
-                else:
-                    move = random.choice(list(board.legal_moves))
-
-            else:
-                cowardMoves = [m for m in legalMoves if m not in capturingMoves]
-                if cowardMoves:
-                    move = random.choice(cowardMoves)
-                else:
-                    move = random.choice(legalMoves)
-
-                
-            print(f"Turn: {board.fullmove_number}\tSide: {"White" if board.turn==chess.WHITE else "Black"}\n" + f"{board}" + "\n\n\n" + f"Previous Move Made: {move}", end="/r")
-            board.push(move)
-    #        displayBoard(board)
-
-
+        subprocess.run([
+            rsvg_path,
+            "-w", str(width),
+            "-h", str(height),
+            "-o", os.path.abspath(png_path),
+            os.path.abspath(svg_path)
+        ], check=True)

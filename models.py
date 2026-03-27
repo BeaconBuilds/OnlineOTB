@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from enum import Enum
+from typing import Optional
 
 class Profile:
     def __init__(self, data):
@@ -92,3 +94,56 @@ class LoopState:
     want_lichess_stream: bool = True
     want_board_stream: bool = True
     want_input: bool = True
+    want_gui: bool = True
+
+
+
+@dataclass (frozen=True)
+class ClientEvent:
+    class Status(Enum):
+        ACTIVE = "active"
+        FAILED = "failed"
+        ENDED = "ended:"
+
+    source: str      
+    state: Status   
+    info: str = "" #error messages
+
+
+
+@dataclass(frozen=True)
+class MainToGUIEvent:
+
+    class Type(Enum):
+        MOVE = "move"                 
+        BOARD_UPDATE = "board_update" 
+        LICHESS_STATE = "game_state"  
+        LOG = "log"                   
+        ERROR = "error"               
+
+    event_type: Type
+
+    boardEventData : Optional[BoardEvent] = None
+    lichessEventData : Optional[LichessEvent] = None
+
+    move: Optional[str] = None     
+    # log/errors
+    message: Optional[str] = None
+
+
+
+@dataclass(frozen=True)
+class GUIToMainEvent:
+
+    class Type(Enum):
+        FIND_GAME = "find_game"
+        MOVE = "move"
+        RESIGN = "resign"
+        DRAW_REQUEST = "draw_request"
+
+    event_type: Type
+
+    move: Optional[str] = None       
+
+    time: Optional[int] = None       
+    increment: Optional[int] = None
