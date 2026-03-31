@@ -16,6 +16,9 @@ import models
 async def main():
 
 
+#game full isnt lichess even its a board event stupid
+
+
     async def consumeQueue(q):
         if isinstance(q, asyncio.Queue):
             try:   
@@ -36,6 +39,53 @@ async def main():
                 await userInputQueue.put(input)
                 print(f"User typed : {input}")            
 
+#---------------- Wrapper for Generic Stream
+    async def streamWrapper(clientTemplate : tuple,
+                            queue: asyncio.Queue,
+                            gameID : str = None):
+        try:
+            retryConnection = True
+
+            while retryConnection:
+                async for result in client.genericStream(clientTemplate, gameID=gameID):
+                    if not result.ok:
+                        print(f"\n***STREAM ERROR***"
+                            f"\n{f"Status: {result.status}" if result.status else "No Status "}"
+                            #f"\n{f"Headers: {result.headers}" if result.headers else "No Headers"}"
+                            f"\nError: {str(result.error)}\n"
+                        )
+                        break
+                        #print error and break to retry connection
+                        #change to logging in gui eventually
+
+                    elif result.ended:
+                        retryConnection = False
+                        print("Graceful stream shutdown")
+                        break
+                        #if loop ended normally
+
+                    elif result.heartbeat:
+                        continue
+                        #not used right now, maybe turn into timeout checker?
+                        #or just edit aiohttp config?
+
+                    elif result.data:
+                        print(f"\nData:{json.dumps(result.data, indent=4)}")
+                        print(f"Model Output: \n{result.model}")
+                        await queue.put(result.model)
+                    else:
+                        print(
+                            f"Stream for URL: {clientTemplate[0]}"
+                            f"\n{f"Status: {result.status}" if result.status else "No Status "}"
+                            #f"\n{f"Headers: {result.headers}" if result.headers else "No Headers"}"
+                        )
+
+                await asyncio.sleep(2) # dont spam endpoint
+
+        except asyncio.CancelledError as e:
+            print("Task canceled on purpose")
+            return
+
 
 #--------------------START-MAIN-LOOP------------------------------------------------------#
     async def mainControlLoop():
@@ -53,26 +103,30 @@ async def main():
 
             #Lichess Stream
             if state.want_lichess_stream:
-                lichessEvent = await consumeQueue(lichessEventQueue)
+                lichessEvent: models.LichessEvent = await consumeQueue(lichessEventQueue)
                 if lichessEvent: #If didn't return None
+                    print(f"Lichess Event printout{lichessEvent}")
                     if lichessEvent.eventType == "gameStart": 
                         gameID = lichessEvent.gameID
                         logic = ChessLogic(lichessEvent)
-                        asyncio.create_task(client.boardStateStream(gameEventQueue, gameID))
-                        #if game started then tell client to start streaming the board of gameID
                         state.is_in_game = True
+                        boardStreamTask = asyncio.create_task(streamWrapper(client.BOARD_STREAM, gameEventQueue, gameID=gameID))
+                        #if game started then tell client to start streaming the board of gameID                 
                         print(f"Game Started - Game ID : {gameID}")
                     if lichessEvent.eventType == "gameFinish":
                         print(f"Game Finished - Winner: {lichessEvent.winner}")
-                        state.is_in_game = False
+                        
 
             #Board Stream
             if state.is_in_game and state.want_board_stream:
-                boardEvent = await consumeQueue(gameEventQueue)
-                if boardEvent:
+                boardEvent: models.BoardEvent = await consumeQueue(gameEventQueue)
+                if boardEvent:                    
                     logic.handle_game_event(boardEvent)
                     app.update_board()
-                    print(f"Moves: {boardEvent.moves}")
+                    if boardEvent.winner:
+                        state.is_in_game = False
+                        #do winner code in here, display to gui, etc
+
         
             #User Input
             if state.want_input and state.is_in_game:
@@ -92,14 +146,15 @@ async def main():
             if state.want_gui:
                 guiInput: models.GUIToMainEvent = await consumeQueue(guiQueue)
                 if(guiInput):
-                    if(guiInput.event_type == guiInput.Type.MOVE):
-                        valid, reason = logic.validateMove(guiInput.move)
-                        if valid:
-                            #send to client
-                            asyncio.create_task(client.postMove(logic.gameID, guiInput.move))
-                            #state.want_input = False
-                        else:
-                            print(f"ERROR: \"{userInput}\" IS NOT A VALID MOVE REASON: \"{reason}\"")
+                    if state.is_in_game:
+                        if(guiInput.event_type == guiInput.Type.MOVE):
+                            valid, reason = logic.validateMove(guiInput.move)
+                            if valid:
+                                #send to client
+                                asyncio.create_task(client.postMove(logic.gameID, guiInput.move))
+                                #state.want_input = False
+                            else:
+                                print(f"ERROR: \"{userInput}\" IS NOT A VALID MOVE REASON: \"{reason}\"")
 
 
 
@@ -130,18 +185,17 @@ async def main():
 
     client = LichessClient()
     logic = None
-    app = App(gui_to_main=guiQueue)
+    app = App(guiToMainQueue=guiQueue)
 
-    asyncio.create_task(client.getAccount(accountQueue))
-    asyncio.create_task(client.lichessStream(lichessEventQueue)) 
+    lichessStreamTask = asyncio.create_task(streamWrapper(client.LICHESS_STREAM, lichessEventQueue))
+    boardStreamTask = None 
     #async tell client to call api and return data to queue
 
-    asyncio.create_task(userInputLoop(state))
+    #asyncio.create_task(userInputLoop(state))
     #user input
 
     app.start()
     asyncio.create_task(app.fake_main_loop())
-    #start tkinter
 
     await mainControlLoop()
 
@@ -150,13 +204,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-    print("running main")
-
-
-def Main():
-
-    def someFunc():
-        print(f'{x}')
-
-    x = 5
-    someFunc()

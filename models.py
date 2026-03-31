@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import Optional, Union
+from models import *
 
 class Profile:
     def __init__(self, data):
@@ -43,7 +44,8 @@ class LichessEvent:
                 self.winner = game.get("winner")
 
     def __str__(self):
-        return (f"Event Type: {self.eventType}\n"
+        return (f"LichessEvent Printout\n"
+                f"Event Type: {self.eventType}\n"
                 f"Is Game Start: {self.is_game_start}\n"
                 f"Is Game Over: {self.is_game_over}\n"
                 f"Full ID: {self.fullID}\n"
@@ -51,6 +53,7 @@ class LichessEvent:
                 f"FEN: {self.fen}\n"
                 f"Color: {self.color}\n"
                 f"Winner: {self.winner}\n"
+                #f"Board State: {self.boardState}\n"
                 )
 
 
@@ -65,17 +68,23 @@ class BoardEvent:
         self.winc = None
         self.wtime = None
         self.winner = None
-        if self.eventType  == "gameState":
-            self.binc = data.get("binc")
-            self.btime = data.get("btime")
-            self.moves = data.get("moves")
-            self.status = data.get("status")
-            self.winc = data.get("winc")
-            self.wtime = data.get("wtime")
-            self.winner = data.get("winner")
+        state = data
+        if self.eventType  in ("gameState", "gameFull"):
+            if self.eventType == "gameFull":
+                state = data.get("state", {})
+
+            self.binc = state.get("binc")
+            self.btime = state.get("btime")
+            self.moves = state.get("moves")
+            self.status = state.get("status")
+            self.winc = state.get("winc")
+            self.wtime = state.get("wtime")
+            self.winner = state.get("winner")
+        
 
     def __str__(self):
-        return (f"Event Type: {self.eventType}\n"
+        return (f"BoardEvent Printout\n"
+                f"Event Type: {self.eventType}\n"
                 f"Black Increment: {self.binc}\n"
                 f"Black Time: {self.btime}\n"
                 f"Moves: {self.moves}\n"
@@ -84,6 +93,17 @@ class BoardEvent:
                 f"White Time: {self.wtime}\n"
                 f"Winner: {self.winner}\n"
             )    
+    
+@dataclass (frozen=True)
+class StreamModel:
+    status: Optional[str] = None
+    headers: Optional[str] = None
+    data: Optional[str] = None
+    model: Optional[Union[LichessEvent, BoardEvent]] = None
+    error: Optional[Exception] = None
+    ok: Optional[bool] = True
+    heartbeat: Optional[bool] = False
+    ended: Optional[bool] = False
 
 
 @dataclass

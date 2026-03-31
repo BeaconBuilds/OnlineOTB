@@ -34,8 +34,12 @@ class ChessLogic:
             return (is_Valid, reason)
         
         legalList = list(self.board.generate_legal_moves())
-        if chess.Move.from_uci(moveStr) not in legalList:
-            reason = f"{moveStr} not in legal set of moves: {legalList}"
+        try:
+            if chess.Move.from_uci(moveStr) not in legalList:
+                reason = f"{moveStr} not in legal set of moves: {legalList}"
+                return (is_Valid, reason)
+        except Exception as e:
+            reason = f"{moveStr} threw exception in python-chess: {str(e)}"
             return (is_Valid, reason)
         
         is_Valid = True
@@ -45,7 +49,7 @@ class ChessLogic:
 
 
     def handle_game_event(self, boardEvent):
-        if boardEvent.eventType == "gameState" and boardEvent.moves is not None:
+        if boardEvent.eventType in ("gameState", "gameFull") and boardEvent.moves is not None:
             self.updateMoves(boardEvent.moves.split(" "))
         #make moves
 
@@ -55,6 +59,9 @@ class ChessLogic:
         else:
             self.is_my_turn = False
 
+        self.makeSVG()
+    
+    def printState(self):
         print(
             f"""
             --- GAME STATE ---
@@ -66,10 +73,7 @@ class ChessLogic:
             -------------------
             """
         )        
-
-        self.makeSVG()
     
-
 
     def updateMoves(self, newMoves):
         newMovesNum = len(newMoves)
@@ -101,7 +105,7 @@ class ChessLogic:
 
 
 
-    def svg_to_png(self, svg_path="board.svg", png_path="board.png", width=360, height=360):
+    def svg_to_png(self, svg_path="board.svg", png_path="board.png", width=340, height=340):
         rsvg_path = r"C:\msys64\mingw64\bin\rsvg-convert.exe"
 
         subprocess.run([

@@ -1,5 +1,7 @@
-python-dotenv
+tksvg
 aiohttp
-aioconsole
+python-dotenv
 requests
+aioconsole
 python-chess
+ttkbootstrap
