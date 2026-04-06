@@ -108,7 +108,7 @@ async def main():
             if state.want_lichess_stream:
                 lichessEvent: models.LichessEvent = await consumeQueue(lichessEventQueue)
                 if lichessEvent: #If didn't return None
-                    processLichessStream()
+                    processLichessStream(lichessEvent)
 
                         
 
@@ -131,7 +131,8 @@ async def main():
                     if state.is_in_game:
                         if(guiInput.event_type == guiInput.Type.MOVE):
                             
-                            gameID = logicDict.keys()[0] #Horribly jank - add game selector
+                            gameID = list(logicDict.keys())[0] #Horribly jank - add game selector
+                            #let gui save gameID key to pass during moves
                             userInput = guiInput.move
 
                             valid, reason = logicDict[gameID].validateMove(userInput)
@@ -170,14 +171,13 @@ async def main():
 
     client = LichessClient()
     logicDict = {}
+    #Eventually add multi-game support. as of right now, it will break with 2 games.
+
     app = App(guiToMainQueue=guiQueue)
 
-    lichessStreamTask = asyncio.create_task(streamWrapper(client.LICHESS_STREAM, lichessEventQueue))
+    asyncio.create_task(streamWrapper(client.LICHESS_STREAM, lichessEventQueue))
     boardStreamTask = None 
     #async tell client to call api and return data to queue
-
-    #asyncio.create_task(userInputLoop(state))
-    #user input
 
     app.start()
     asyncio.create_task(app.fake_main_loop())
