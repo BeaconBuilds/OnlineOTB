@@ -78,6 +78,10 @@ class LichessClient:
 
                     jsonData = json.loads(line)
                     event = modelClass(jsonData)
+
+                    if template == self.BOARD_STREAM:
+                        event = modelClass(jsonData, gameID)      
+
                     newRes = models.StreamModel(
                         data=jsonData,
                         model=event

@@ -20,6 +20,7 @@ class ChessLogic:
 
     #make userMove def that checks validity of move and then gives ti back to main to give to client
 
+
     def validateMove(self, moveStr):
         moveStr = moveStr.strip().lower()
         is_Valid = False
