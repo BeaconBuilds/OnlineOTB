@@ -77,10 +77,13 @@ class LichessClient:
                         continue
 
                     jsonData = json.loads(line)
-                    event = modelClass(jsonData)
+                    
 
-                    if template == self.BOARD_STREAM:
-                        event = modelClass(jsonData, gameID)      
+                    if gameID:
+                        event = modelClass(data = jsonData, gameID=gameID) 
+                    #if gameID was passed to the stream then 
+                    else:
+                        event = modelClass(jsonData)
 
                     newRes = models.StreamModel(
                         data=jsonData,
