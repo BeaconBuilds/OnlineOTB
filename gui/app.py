@@ -51,22 +51,22 @@ class RootFrame(ttk.Frame):
         self.parent_app = parent
         self.queue = queue
         self.visible_frame = None
-
-        
+        self.is_in_game = False
+                
         self.menu = MenuFrame(self,
-                            on_play=self.show_game)
+                            on_play=self._press_play)
         
         self.side_bar = SideBarFrame(self,
-                                    on_menu=self.show_menu,
-                                    on_return=self.return_side_bar)
+                                    on_menu=self._show_menu,
+                                    on_return=self._return_side_bar)
                                     
         self.game = GameFrame(self,
-                            on_side_panel=self.show_side_bar,
+                            on_side_panel=self._show_side_bar,
                             queue=self.queue)
         
         self.search = SearchFrame(self,
-                                    on_play_panel=self.show_game,
-                                    on_side_panel=self.show_side_bar,
+                                    on_play_panel=self._show_game,
+                                    on_side_panel=self._show_side_bar,
                                     queue=self.queue)
 
 
@@ -75,33 +75,39 @@ class RootFrame(ttk.Frame):
         self.game.place(relx=0, rely=0, relwidth=1, relheight=1)
         self.search.place(relx=0, rely=0, relwidth=1, relheight=1)
 
+    def set_game(self, is_in_game:bool):
+        self.is_in_game = is_in_game
         
-    def show_menu(self):
+    def _show_menu(self):
         self.menu.lift()
         self.visible_frame = self.menu
 
+    def _press_play(self):
+        if self.is_in_game:
+            self.game.lift()
+        else:
+            self.search.lift()
 
-    def show_game(self): 
+    def _show_game(self): 
         self.game.lift()
         self.visible_frame = self.game
 
 
-    def show_side_bar(self):
+    def _show_side_bar(self):
         self.side_bar.lift()
 
 
-    def return_side_bar(self):
+    def _return_side_bar(self):
         self.visible_frame.lift()
 
-
-    def show_search(self):
+    def _show_search(self):
         self.search.lift()
         self.visible_frame = self.search
 
 
     def start(self):
-        self.show_menu()
-        self.show_search()
+        self._show_menu()
+        self._show_search()
         self.parent_app.update()
         asyncio.create_task(self._fake_main_loop())
 
