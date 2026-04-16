@@ -49,8 +49,8 @@ class RootFrame(ttk.Frame):
         super().__init__(parent)
         
         self.parent_app = parent
-
         self.queue = queue
+        self.visible_frame = None
 
         
         self.menu = MenuFrame(self,
@@ -58,7 +58,7 @@ class RootFrame(ttk.Frame):
         
         self.side_bar = SideBarFrame(self,
                                     on_menu=self.show_menu,
-                                    on_return=self.show_game)
+                                    on_return=self.side_bar_return)
                                     
         self.game = GameFrame(self,
                             on_side_panel=self.show_side_bar,
@@ -76,10 +76,25 @@ class RootFrame(ttk.Frame):
         self.search.place(relx=0, rely=0, relwidth=1, relheight=1)
 
         
-    def show_menu(self): self.menu.lift()
-    def show_game(self): self.game.lift()
-    def show_side_bar(self): self.side_bar.lift()
-    def show_search(self): self.search.lift()
+    def show_menu(self):
+        self.menu.lift()
+        self.visible_frame = self.menu
+
+
+    def show_game(self): 
+        self.game.lift()
+        self.visible_frame = self.game
+
+
+    def show_side_bar(self):
+        self.side_bar.lift()
+
+    def side_bar_return(self):
+        self.visible_frame.lift()
+
+    def show_search(self):
+        self.search.lift()
+        self.visible_frame = self.search
 
 
     def start(self):
