@@ -18,6 +18,16 @@ class Profile:
                 f"Username: {self.username}\n"
                 f"Rapid Rating: {self.rapidRating}\n"
                 )
+
+class PostModel:
+    def __init__(self, url, status, data):
+        self.endpoint = url
+        self.ok = False
+        self.error = None
+        if status == 200:
+            self.ok = True
+        elif status == 400:
+            self.error = data.get("error")
     
 
 class LichessEvent:
@@ -44,34 +54,60 @@ class LichessEvent:
                 self.winner = game.get("winner")
 
     def __str__(self):
-        return (f"LichessEvent Printout\n"
-                f"Event Type: {self.eventType}\n"
-                f"Is Game Start: {self.is_game_start}\n"
-                f"Is Game Over: {self.is_game_over}\n"
-                f"Full ID: {self.fullID}\n"
-                f"Game ID: {self.gameID}\n"
-                f"FEN: {self.fen}\n"
-                f"Color: {self.color}\n"
-                f"Winner: {self.winner}\n"
-                #f"Board State: {self.boardState}\n"
-                )
+        fields = {
+            "eventType": self.eventType,
+            "is_game_start": self.is_game_start,
+            "is_game_over": self.is_game_over,
+            "fullID": self.fullID,
+            "gameID": self.gameID,
+            "fen": self.fen,
+            "color": self.color,
+            "winner": self.winner,
+        }
+        parts = [f"  {k}: {v}" for k, v in fields.items() if v is not None and v is not False]
+        return "LichessEvent(\n" + "\n".join(parts) + "\n)"
 
 
 class BoardEvent:
-    def __init__(self, data):
+    def __init__(self, data, gameID):
+        self.gameID = gameID
         self.json = data
         self.eventType = data.get("type")
-        self.binc = None
+        
         self.btime = None
-        self.moves = None
-        self.status = None
-        self.winc = None
-        self.wtime = None
+        self.wtime = None        
+        self.status = None      
         self.winner = None
+        self.moves = None
+
+        self.initialTime = None #Gamefull stuff
+        self.wName = None
+        self.wRating = None
+        self.bName = None
+        self.bRating = None
+
+        self.binc = None
+        self.winc = None
+
+        self.chatUsername = None
+        self.chatText = None
+
         state = data
         if self.eventType  in ("gameState", "gameFull"):
             if self.eventType == "gameFull":
                 state = data.get("state", {})
+                
+                clock = data.get("clock", {})
+                self.initialTime = clock.get("initial")
+
+                white = data.get("white",{})
+                self.wname = white.get("name")
+                self.wrating = white.get("rating")
+
+                black = data.get("black",{})
+                self.bname = black.get("name")
+                self.brating = black.get("rating")
+
 
             self.binc = state.get("binc")
             self.btime = state.get("btime")
@@ -80,19 +116,33 @@ class BoardEvent:
             self.winc = state.get("winc")
             self.wtime = state.get("wtime")
             self.winner = state.get("winner")
+
+        if self.eventType == "chatLine":
+            self.chatUsername = state.get("username")
+            self.chatText = state.get("text")
         
 
     def __str__(self):
-        return (f"BoardEvent Printout\n"
-                f"Event Type: {self.eventType}\n"
-                f"Black Increment: {self.binc}\n"
-                f"Black Time: {self.btime}\n"
-                f"Moves: {self.moves}\n"
-                f"Status: {self.status}\n"
-                f"White Increment: {self.winc}\n"
-                f"White Time: {self.wtime}\n"
-                f"Winner: {self.winner}\n"
-            )    
+        fields = {
+            "gameID": self.gameID,
+            "eventType": self.eventType,
+            "btime": self.btime,
+            "wtime": self.wtime,
+            "status": self.status,
+            "winner": self.winner,
+            "moves": self.moves,
+            "initialTime": self.initialTime,
+            "wName": self.wName,
+            "wRating": self.wRating,
+            "bName": self.bName,
+            "bRating": self.bRating,
+            "binc": self.binc,
+            "winc": self.winc,
+            "chatUsername": self.chatUsername,
+            "chatText": self.chatText,
+        }
+        parts = [f"  {k}: {v}" for k, v in fields.items() if v is not None]
+        return "BoardEvent(\n" + "\n".join(parts) + "\n)"
     
 @dataclass (frozen=True)
 class StreamModel:
@@ -159,11 +209,53 @@ class GUIToMainEvent:
         FIND_GAME = "find_game"
         MOVE = "move"
         RESIGN = "resign"
-        DRAW_REQUEST = "draw_request"
+        DRAW = "draw"
+        EXIT_PROGRAM = "exit_program"
 
     event_type: Type
 
-    move: Optional[str] = None       
+    move: Optional[str] = None
+    gameID: Optional[str] = None       
 
     time: Optional[int] = None       
     increment: Optional[int] = None
+
+    yesNo: Optional[str] = None
+
+@dataclass(frozen=True)
+class MatrixToMain:
+
+    class Type(Enum):
+        BOARD_CHANGE = "BOARD_CHANGE"
+        CONFIRMED_MOVE = "CONFIRMED_MOVE"
+
+    eventType: Type
+    boardData: list[list[bool]]
+    
+    #requirements:
+    #type field for type of change, either
+    #confirmed move OR
+    #stateChange
+    #(This type will tell main what logic method to send data )
+    #
+    #then pass full board state to logic.
+    #
+    #Logic will, 1) make new image with changes
+    #           2) check validity of piece( and return answer)
+    #
+    #main will then 1) if valid, send move to client
+    #               2) tell gui to display something like move made
+    #
+    # 
+    # for enemy moves, we will add a method for logic that creates the board image 
+    # with enemy moves not yet made OTB yet (with red squares and arrows to show move)
+    # 
+    # we will keep track to ensure board matches lichess
+    #
+    # make new class similar to logic.py that tracks the matrix board, parses matrix data, and sends chess.board states to main or logic
+    # 
+    #  
+    # matrix data will NOT be accepted to main/gui/logic UNTIL board synced (display GUI)
+    # if "confiromed mve" type is sent, and board is not sync (confirmed by logic),
+    #   then send GUI to blatently tell user to "Syncronize board"
+    #             

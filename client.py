@@ -13,12 +13,47 @@ class LichessClient:
     ACCOUNT_GET = "https://lichess.org/api/account", models.Profile
     LICHESS_STREAM = "https://lichess.org/api/stream/event", models.LichessEvent
     BOARD_STREAM = "https://lichess.org/api/board/game/stream/{gameID}", models.BoardEvent
+    MOVE_POST = "https://lichess.org/api/board/game/{gameID}/move/{move}", models.PostModel
+    RESIGN_POST = "https://lichess.org/api/board/game/{gameID}/resign", models.PostModel
+    DRAW_POST = "https://lichess.org/api/board/game/{gameID}/draw/{yesNo}", models.PostModel
+    TAKEBACK_POST = "https://lichess.org/api/board/game/{gameID}/takeback/{yesNo}", models.PostModel
+    CLAIM_VICTORY_POST = "https://lichess.org/api/board/game/{gameID}/claim-victory", models.PostModel
+    ABORT_POST = "https://lichess.org/api/board/game/{gameID}/abort", models.PostModel
+    SEND_CHAT_POST =  "https://lichess.org/api/board/game/{gameID}/chat", models.PostModel
+    FETCH_CHAT_GET = "https://lichess.org/api/board/game/{gameID}/chat"#, models.FetchChat
 
     def __init__ (self):
         self.aSession = aiohttp.ClientSession(
             headers = {"Authorization": f"Bearer {TOKEN}"}
         )
     
+
+    async def genericPost(self, template: tuple,
+                           gameID: str = None,
+                           yesNo: str = None,
+                           move:str = None):
+        url, modelClass = template
+
+        if template == self.RESIGN_POST:
+            url = url.format(gameID = gameID)
+
+        elif template == self.DRAW_POST:
+            url = url.format(gameID = gameID, yesNo = yesNo)
+            print(f"now trying to send draw post {url}")
+
+        elif template == self.MOVE_POST:
+            url = url.format(gameID = gameID, move = move)
+
+        async with self.aSession.post(url) as response:
+            model = models.PostModel(
+                url=url,
+                status= response.status(),
+                data = await response.text()
+            )
+            yield model
+
+
+
     async def getAccount(self, queue):
         async with self.aSession.get(
             "https://lichess.org/api/account"
@@ -28,26 +63,7 @@ class LichessClient:
             await queue.put(profile)
 
 
-    async def lichessStream(self, queue):
-        async with self.aSession.get(
-            "https://lichess.org/api/stream/event"
-        ) as response:
-            
-            print(f"Lichess Stream Status: {response.status}")
-            async for line in response.content:
-                line = line.decode().strip()
-                if not line:
-                    continue
-                data = json.loads(line)
-                print(data)
-                event = models.LichessEvent(data)
-                await queue.put(event)
 
-        for i in range(30): print("--------------RESETTING LICHESS STREAM ------------")
-        self.lichessStream(queue)
-        #call endpoint, print status, read stream lines,
-        #ignore empty lines, convert to json, put data in model structure,
-        #put in queue
 
     async def genericStream(self,
                             template: tuple, 
@@ -115,24 +131,3 @@ class LichessClient:
             )
             yield error
             return
-
-
-    async def boardStateStream(self, queue, gameID):
-        async with self.aSession.get(
-            f"https://lichess.org/api/board/game/stream/{gameID}"
-        ) as response:
-            print(f"Board State Stream Status: {response.status}") 
-            async for line in response.content:
-                line = line.decode().strip()
-                if not line:
-                    continue
-                data = json.loads(line)
-                event = models.BoardEvent(data)
-                await queue.put(event)
-
-    #Make move
-    async def postMove(self, gameID, move, offerdraw = False, queue = None):
-        async with self.aSession.post(
-            url = f"https://lichess.org/api/board/game/{gameID}/move/{move}"
-        ) as response:
-            print(f"Send Move Status: {response.status}")
