@@ -58,7 +58,7 @@ class RootFrame(ttk.Frame):
         
         self.side_bar = SideBarFrame(self,
                                     on_menu=self.show_menu,
-                                    on_return=self.side_bar_return)
+                                    on_return=self.return_side_bar)
                                     
         self.game = GameFrame(self,
                             on_side_panel=self.show_side_bar,
@@ -89,8 +89,10 @@ class RootFrame(ttk.Frame):
     def show_side_bar(self):
         self.side_bar.lift()
 
-    def side_bar_return(self):
+
+    def return_side_bar(self):
         self.visible_frame.lift()
+
 
     def show_search(self):
         self.search.lift()
