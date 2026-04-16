@@ -19,6 +19,8 @@ class SearchFrame(ttk.Frame):
 
         self.clock_time_text = tkinter.StringVar(value="Clock time: 10 min")
         self.inc_time_text = tkinter.StringVar(value="Increment time: 3 sec")
+        self.clock_int = tkinter.IntVar()
+        self.inc_int = tkinter.IntVar()
         
         self._build()
 
@@ -35,20 +37,22 @@ class SearchFrame(ttk.Frame):
         self.header_frame.columnconfigure(index=1, weight=5)
         self.header_frame.columnconfigure(index=2, weight=1)
 
-        self.title_button = ttk.Button(self.header_frame, bootstyle="info", text="Find Game")
+        self.title_button = ttk.Button(self.header_frame, bootstyle="dark", text="Find Game")
         self.title_button.grid(row=0, column=1, ipadx=10, ipady=10, sticky='')
 
-        self.menu_button = ttk.Button(self.header_frame, style="info", text="Menu", command=self._side_panel_press)
+        self.menu_button = ttk.Button(self.header_frame, style="primary", text="Menu", command=self._side_panel_press)
         self.menu_button.grid(row=0, column=2, padx=10, pady=10, sticky='nsew')
         self.menu_button.grid_propagate(False)
 
-        self.bottom_frame = ttk.Frame(self, bootstyle="success")
+        self.bottom_frame = ttk.Frame(self, bootstyle="bg")
         self.bottom_frame.grid(row=1, column=0, sticky='nsew')
         self.bottom_frame.rowconfigure(index=0, weight=1)
         self.bottom_frame.columnconfigure(index=0, weight=3)
         self.bottom_frame.columnconfigure(index=1, weight=1)
+        self.bottom_frame.columnconfigure(index=2, weight=3)
+        
 
-        self.settings_frame = ttk.Frame(self.bottom_frame, bootstyle="danger")
+        self.settings_frame = ttk.Frame(self.bottom_frame, bootstyle="bg")
         self.settings_frame.grid(row=0, column=0, sticky='nsew')
         self.settings_frame.rowconfigure(index=0, weight=1)
         self.settings_frame.rowconfigure(index=1, weight=1)
@@ -58,7 +62,7 @@ class SearchFrame(ttk.Frame):
         self.settings_frame.rowconfigure(index=5, weight=1)
         self.settings_frame.columnconfigure(index=0, weight=1)
 
-        self.top_options_frame = ttk.Frame(self.settings_frame, bootstyle="dark")
+        self.top_options_frame = ttk.Frame(self.settings_frame, bootstyle="bg")
         self.top_options_frame.grid(row=0, column=0, sticky='nsew')
         self.top_options_frame.rowconfigure(index=0, weight=1)
         self.top_options_frame.columnconfigure(index=0, weight=1)
@@ -66,7 +70,7 @@ class SearchFrame(ttk.Frame):
         self.top_options_frame.columnconfigure(index=2, weight=1)
         self.top_options_frame.columnconfigure(index=3, weight=1)
         
-        self.second_options_frame= ttk.Frame(self.settings_frame, bootstyle="light")
+        self.second_options_frame= ttk.Frame(self.settings_frame, bootstyle="bg")
         self.second_options_frame.grid(row=1, column=0, sticky='nsew')
 
         self.t1_label = ttk.Label(self.top_options_frame, text="Opponent:")
@@ -86,23 +90,45 @@ class SearchFrame(ttk.Frame):
         self.t3_label = ttk.Label(self.settings_frame, textvariable=self.clock_time_text)
         self.t3_label.grid(row=2, column=0, sticky='')
 
-        self.clock_scale = ttk.Scale(self.settings_frame, from_=0, to=100, value=75, orient='horizontal')
+        self.clock_scale = ttk.Scale(self.settings_frame, from_=0, to=100, value=75, orient='horizontal', variable=self.clock_int, command=self._on_clock_slide)
         self.clock_scale.grid(row=3, column=0, padx=30, sticky='ew')
 
         self.t4_label = ttk.Label(self.settings_frame, textvariable=self.inc_time_text)
         self.t4_label.grid(row=4, column=0, sticky='')
 
-        self.inc_scale = ttk.Scale(self.settings_frame, from_=0, to=100, value=75, orient='horizontal')
+        self.inc_scale = ttk.Scale(self.settings_frame, from_=0, to=100, value=75, orient='horizontal', variable=self.inc_int, command=self._on_inc_slide)
         self.inc_scale.grid(row=5, column=0, padx=30, sticky='ew')
 
+        self.divider_frame = ttk.Frame(self.bottom_frame, bootstyle="dark")
+        self.divider_frame.grid(row=0, column=1, sticky='nsew')
 
-        self.favorite_frame = ttk.Frame(self.bottom_frame, bootstyle="light")
-        self.favorite_frame.grid(row=0, column=1, sticky='nsew')
+        self.favorite_frame = ttk.Frame(self.bottom_frame, bootstyle="bg")
+        self.favorite_frame.grid(row=0, column=2, sticky='nsew')
+        self.favorite_frame.rowconfigure(index=0, weight=1)
+        self.favorite_frame.rowconfigure(index=1, weight=2)
+        self.favorite_frame.rowconfigure(index=2, weight=2)
+        self.favorite_frame.rowconfigure(index=3, weight=2)
+        self.favorite_frame.columnconfigure(index=0, weight=1)
 
-        
+        self.fav_title_label = ttk.Label(self.favorite_frame, text="Favorites")
+        self.fav_title_label.grid(row=0, column=0, sticky='')
+
+        self.fav1_button = ttk.Button(self.favorite_frame, text="WorstChess\n10 min, 5 sec", bootstyle="primary")
+        self.fav1_button.grid(row=1, column=0, padx=5, pady=10, sticky='nsew')
+
+        self.fav2_button = ttk.Button(self.favorite_frame, text="Player\n10 min, 5 sec", bootstyle="primary")
+        self.fav2_button.grid(row=2, column=0, padx=5, pady=10, sticky='nsew')
+
+        self.fav3_button = ttk.Button(self.favorite_frame, text="Stockfish\n10 min, 5 sec", bootstyle="primary")
+        self.fav3_button.grid(row=3, column=0, padx=5, pady=10, sticky='nsew')
 
     def _side_panel_press(self):
         if self.on_side_panel:
             self.on_side_panel()
        
+    def _on_clock_slide(self, event):
+        self.clock_time_text.set(f"Clock time: {self.clock_int.get()} min")
+        #make it so first 75% is  5min to 30min, the next 24% for correspondance 1 day 2 day 3, 5, and '100' is for unlimited
 
+    def _on_inc_slide(self, event):
+        self.inc_time_text.set(f"Clock time: {self.inc_int.get()} min")
