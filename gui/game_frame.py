@@ -22,6 +22,7 @@ class GameFrame(ttk.Frame):
                 queue:queue.Queue=None):
         super().__init__(parent)
 
+        self.parent_app = parent
         self.on_side_panel = on_side_panel
         self.queue = queue
         
@@ -39,6 +40,8 @@ class GameFrame(ttk.Frame):
     def update_board(self, game_id: str):
         self.board_panel.update_board(game_id)
         self.game_panel._set_game_id(game_id)
+        if game_id:
+            self.parent_app.set_game(True)
 
 
     def set_turn(self, is_my_turn: bool):
@@ -214,6 +217,7 @@ class GamePanel(ttk.Frame):
 
     def _set_game_id(self, game_id):
         self.game_id = game_id
+        
 
 
     def _resign_press(self):
@@ -305,10 +309,19 @@ class BoardPanel(ttk.Frame):
 
 
 class EndPanel(ttk.Frame):
-    def __init__(self, parent):
+    def __init__(self, parent, on_menu, on_search, queue:queue.Queue):
         super().__init__(parent)
-
+        self.on_menu = on_menu
+        self.on_search = on_search
+        self.queue = queue
+        
         self._build()
 
     def _build(self):
-        pass
+        
+        self.rowconfigure(index=0, weight=1)
+        self.rowconfigure(index=1, weight=1)
+        self.rowconfigure(index=2, weight=1)
+        self.rowconfigure(index=3, weight=1)
+        self.columnconfigure(index=0, weight=1)
+        self.columnconfigure(index=1, weight=1)
