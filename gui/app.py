@@ -7,6 +7,7 @@ import asyncio
 from .menu_frame import MenuFrame
 from .game_frame import GameFrame
 from .side_bar_frame import SideBarFrame
+from .search_game_frame import SearchFrame
 
 MENU_BTN_FONT = ("Segoe UI", 25, "bold")
 FG_GRAY = "#ABB6C2"
@@ -62,20 +63,28 @@ class RootFrame(ttk.Frame):
         self.game = GameFrame(self,
                             on_side_panel=self.show_side_bar,
                             queue=self.queue)
+        
+        self.search = SearchFrame(self,
+                                    on_play_panel=self.show_game,
+                                    on_side_panel=self.show_side_bar,
+                                    queue=self.queue)
 
 
         self.menu.place(relx=0, rely=0, relwidth=1, relheight=1)
         self.side_bar.place(relx=.8, rely=0, relwidth=.2, relheight=1)
         self.game.place(relx=0, rely=0, relwidth=1, relheight=1)
+        self.search.place(relx=0, rely=0, relwidth=1, relheight=1)
 
         
     def show_menu(self): self.menu.lift()
     def show_game(self): self.game.lift()
     def show_side_bar(self): self.side_bar.lift()
+    def show_search(self): self.search.lift()
 
 
     def start(self):
         self.show_menu()
+        self.show_search()
         self.parent_app.update()
         asyncio.create_task(self._fake_main_loop())
 
