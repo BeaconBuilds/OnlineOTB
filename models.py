@@ -223,6 +223,17 @@ class GUIToMainEvent:
     yesNo: Optional[str] = None
 
 @dataclass(frozen=True)
+class ChallengeData:
+    
+    time_limit: Optional[str] = None
+    time_increment: Optional[str] = None
+    days: Optional[int] = None
+    rated: Optional[bool] = False
+    color: Optional[str] = "random"
+    variant: Optional[str] = "standard"
+    
+
+@dataclass(frozen=True)
 class MatrixToMain:
 
     class Type(Enum):
@@ -231,7 +242,9 @@ class MatrixToMain:
 
     eventType: Type
     boardData: list[list[bool]]
-    
+
+
+
     #requirements:
     #type field for type of change, either
     #confirmed move OR
