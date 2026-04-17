@@ -1,7 +1,7 @@
 import tkinter 
 from tkinter import ttk
 import ttkbootstrap as tb
-from models import GUIToMainEvent
+from models import GUIToMainEvent, ChallengeData
 import queue
 
 
@@ -22,6 +22,10 @@ class SearchFrame(ttk.Frame):
         self.clock_int = tkinter.IntVar()
         self.inc_int = tkinter.IntVar()
         
+        self.challenge_to_send = ChallengeData()
+        self.is_valid_options = False
+        
+        
         self._build()
 
     def _build(self):
@@ -37,7 +41,7 @@ class SearchFrame(ttk.Frame):
         self.header_frame.columnconfigure(index=1, weight=5)
         self.header_frame.columnconfigure(index=2, weight=1)
 
-        self.title_button = ttk.Button(self.header_frame, bootstyle="dark", text="Find Game")
+        self.title_button = ttk.Button(self.header_frame, bootstyle="disabled", text="Find Game", command=self._title_press)
         self.title_button.grid(row=0, column=1, ipadx=10, ipady=10, sticky='')
 
         self.menu_button = ttk.Button(self.header_frame, style="primary", text="Menu", command=self._side_panel_press)
@@ -76,8 +80,9 @@ class SearchFrame(ttk.Frame):
         self.t1_label = ttk.Label(self.top_options_frame, text="Opponent:")
         self.t1_label.grid(row=0, column=0, sticky='')
 
-        self.opponents = ["Player", "WorstChess"]
+        self.opponents = ["Player", "WorstFish"]
         self.op_combobox = tb.Combobox(self.top_options_frame, values=self.opponents, state="readonly")
+        self.op_combobox.set("WorstFish")
         self.op_combobox.grid(row=0, column=1, sticky='')
 
         self.t2_label = ttk.Label(self.top_options_frame, text="Side:")
@@ -85,6 +90,7 @@ class SearchFrame(ttk.Frame):
 
         self.sides = ["Random", "White", "Black"]
         self.side_combobox = tb.Combobox(self.top_options_frame, values=self.sides, state="readonly")
+        self.side_combobox.set("Random")
         self.side_combobox.grid(row=0, column=3, sticky='')
 
         self.t3_label = ttk.Label(self.settings_frame, textvariable=self.clock_time_text)
@@ -122,13 +128,40 @@ class SearchFrame(ttk.Frame):
         self.fav3_button = ttk.Button(self.favorite_frame, text="Stockfish\n10 min, 5 sec", bootstyle="primary")
         self.fav3_button.grid(row=3, column=0, padx=5, pady=10, sticky='nsew')
 
+    def _validate_options(self):
+        username = self.op_combobox.get()
+        self.challenge_to_send.username = username
+        
+        side = self.side_combobox.get().lower()
+        self.challenge_to_send.color=side
+        
+        time = self.clock_int.get()
+        self.clock_time_text.set(f"Clock time: {time} min")
+        self.challenge_to_send.time_limit= time * 60 #api takes time in seconds
+        
+        inc = self.inc_int.get()
+        self.inc_time_text.set(f"Clock time: {inc} min")
+        self.challenge_to_send.time_increment = inc
+        
+        
+
+    def _title_press(self):
+        self._validate_options
+        if self.queue:
+            data = GUIToMainEvent(
+                event_type = GUIToMainEvent.Type.CHALLENGE,
+                challenge_data = self.challenge_to_send
+            )
+            self.queue.put(data)
+
     def _side_panel_press(self):
         if self.on_side_panel:
             self.on_side_panel()
        
     def _on_clock_slide(self, event):
-        self.clock_time_text.set(f"Clock time: {self.clock_int.get()} min")
+        self._validate_options()
+        
         #make it so first 75% is  5min to 30min, the next 24% for correspondance 1 day 2 day 3, 5, and '100' is for unlimited
 
     def _on_inc_slide(self, event):
-        self.inc_time_text.set(f"Clock time: {self.inc_int.get()} min")
+        self._validate_options()

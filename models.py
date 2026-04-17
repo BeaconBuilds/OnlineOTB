@@ -1,7 +1,9 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Union
 from models import *
+
 
 class Profile:
     def __init__(self, data):
@@ -211,6 +213,8 @@ class GUIToMainEvent:
         RESIGN = "resign"
         DRAW = "draw"
         EXIT_PROGRAM = "exit_program"
+        CHALLENGE = "challenge"
+        CHAT = "chat"
 
     event_type: Type
 
@@ -221,17 +225,44 @@ class GUIToMainEvent:
     increment: Optional[int] = None
 
     yesNo: Optional[str] = None
+    
+    challenge_data: Optional[ChallengeData] = None
+    
+    
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class ChallengeData:
     
-    time_limit: Optional[str] = None
-    time_increment: Optional[str] = None
+    username: Optional[str] = None
+    
+    time_limit: Optional[int] = None
+    time_increment: Optional[int] = None
     days: Optional[int] = None
     rated: Optional[bool] = False
     color: Optional[str] = "random"
     variant: Optional[str] = "standard"
     
+@dataclass(frozen=False)
+class ChallengeData:
+    
+    username: Optional[str] = None
+    
+    time_limit: Optional[int] = None
+    time_increment: Optional[int] = None
+    days: Optional[int] = None
+    rated: Optional[bool] = False
+    color: Optional[str] = "random"
+    variant: Optional[str] = "standard"
+    
+    @property
+    def data(self):
+        return {
+            "clock.limit": str(self.time_limit),
+            "clock.increment": str(self.time_increment),
+            "rated": str(self.rated).lower(),
+            "color": self.color,
+            "variant": self.variant,
+        }
 
 @dataclass(frozen=True)
 class MatrixToMain:

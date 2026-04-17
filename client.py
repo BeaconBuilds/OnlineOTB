@@ -21,6 +21,7 @@ class LichessClient:
     ABORT_POST = "https://lichess.org/api/board/game/{gameID}/abort", models.PostModel
     SEND_CHAT_POST =  "https://lichess.org/api/board/game/{gameID}/chat", models.PostModel
     FETCH_CHAT_GET = "https://lichess.org/api/board/game/{gameID}/chat"#, models.FetchChat
+    CHALLENGE_POST = "https://lichess.org/api/challenge/{username}", models.PostModel
 
     def __init__ (self):
         self.aSession = aiohttp.ClientSession(
@@ -29,25 +30,21 @@ class LichessClient:
     
 
     async def genericPost(self, template: tuple,
-                           gameID: str = None,
-                           yesNo: str = None,
-                           move:str = None):
+                           url_data: dict = None,
+                           post_data: dict = None):
         url, modelClass = template
 
-        if template == self.RESIGN_POST:
-            url = url.format(gameID = gameID)
+        if url_data:
+            try:
+                url=url.format(**url_data)
+            except KeyError as e:
+                print(f"****KEY ERROR client.genericPost****\n{e}")
+                return 
 
-        elif template == self.DRAW_POST:
-            url = url.format(gameID = gameID, yesNo = yesNo)
-            print(f"now trying to send draw post {url}")
-
-        elif template == self.MOVE_POST:
-            url = url.format(gameID = gameID, move = move)
-
-        async with self.aSession.post(url) as response:
+        async with self.aSession.post(url=url, data=post_data) as response:
             model = models.PostModel(
                 url=url,
-                status= response.status(),
+                status= response.status,
                 data = await response.text()
             )
             yield model

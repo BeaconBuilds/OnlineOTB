@@ -79,6 +79,7 @@ class RootFrame(ttk.Frame):
 
     def set_game(self, is_in_game:bool):
         self.is_in_game = is_in_game
+        self._show_game()
         
     def _show_menu(self):
         print("Trying to show menu")

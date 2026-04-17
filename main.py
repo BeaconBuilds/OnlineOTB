@@ -26,13 +26,12 @@ async def main():
                 return data
 
     async def postWrapper(clientTemplate : tuple,
-                          gameID: str = None,
-                          yesNo: str = None,
-                          move: str = None):
+                          url_data: dict = None,
+                          post_data: dict = None):
         try:
             maxTries = 10
             for i in range(maxTries):
-                async for result in client.genericPost(clientTemplate, gameID=gameID, yesNo=yesNo, move=move):
+                async for result in client.genericPost(clientTemplate, url_data=url_data, post_data=post_data):
                     if result.ok:
                         if i != 0:
                             print(f"Successful post Attempt {i}")
@@ -116,17 +115,26 @@ async def main():
 
                 valid, reason = logicDict[gameID].validateMove(userInput)
                 if valid:
-                    #send to client
-                    asyncio.create_task(postWrapper(client.MOVE_POST, gameID=gameID, move=userInput))
+                    url_data = {"gameID":gameID,
+                            "move":userInput}
+                    asyncio.create_task(postWrapper(client.MOVE_POST, url_data=url_data))
                 else:
                     print(f"ERROR: \"{userInput}\" IS NOT A VALID MOVE, REASON: \"{reason}\"")
 
             if(guiInput.event_type == guiInput.Type.RESIGN):
-                asyncio.create_task(postWrapper(client.RESIGN_POST, gameID=guiInput.gameID, yesNo=guiInput.yesNo))
+                url_data = {"gameID":guiInput.gameID,
+                        "yesNo":guiInput.yesNo}
+                asyncio.create_task(postWrapper(client.RESIGN_POST, url_data=url_data))
 
             if(guiInput.event_type == guiInput.Type.DRAW):
-                asyncio.create_task(postWrapper(client.DRAW_POST, gameID=guiInput.gameID, yesNo=guiInput.yesNo))
+                daurl_datata = {"gameID":guiInput.gameID,
+                        "yesNo":guiInput.yesNo}
+                asyncio.create_task(postWrapper(client.DRAW_POST, url_data=url_data))
         
+        if(guiInput.event_type == guiInput.Type.CHALLENGE):
+            url_data = {"username":guiInput.challenge_data.username}
+            post_data = guiInput.challenge_data.data
+            asyncio.create_task(postWrapper(client.CHALLENGE_POST, url_data=url_data, post_data=post_data))  
         
         if(guiInput.event_type == guiInput.Type.EXIT_PROGRAM):
                 sys.exit(0)
