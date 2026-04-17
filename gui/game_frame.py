@@ -346,8 +346,16 @@ class EndPanel(ttk.Frame):
 
         self.title_font = Font.Font(family="Lexend", size=20, weight="bold")
         self.reason_font = Font.Font(family="Lexend", size=15, weight="bold")
+        self.chat_options_font = Font.Font(family="Lexend", size=8, weight="normal")
 
+        self.chat_options_list = [("gg", "Good game"),
+                                  ("wp", "Well played"),
+                                  ("tuf", "That was tough"),
+                                  ("fun", "Fun game"),
+                                  ("1", "free1"),
+                                  ("2", "free2")]
         self._build()
+
 
     def _build(self):
         
@@ -370,16 +378,38 @@ class EndPanel(ttk.Frame):
         self.chat_options_label_frame = ttk.Labelframe(self.main_label, bootstyle="light", text="Chat Options")
         self.chat_options_label_frame.grid(row=2, column=0, columnspan=2, sticky='nsew')
         
+
+
+
+        for i, (button_text, message) in enumerate(self.chat_options_list):
+            r = i // 3
+            c = i % 3
+            temp = ttk.Button(self.chat_options_label_frame, text=button_text,
+                                bootstyle="success",
+                                command=lambda m=message: self._chat_press(m))
+            temp.grid(row=r, column=c, padx=5, pady=5, sticky='nsew')
+                
+        
+        self.chat_options_label_frame.rowconfigure(index=0, weight=1)
+        self.chat_options_label_frame.rowconfigure(index=1, weight=1)
+        self.chat_options_label_frame.columnconfigure(index=0, weight=1)
+        self.chat_options_label_frame.columnconfigure(index=1, weight=1)
+        self.chat_options_label_frame.columnconfigure(index=2, weight=1)
+        self.chat_options_label_frame.grid_propagate(False)
+        
+        
         self.replay_button = ttk.Button(self.main_label, text='Replay', style='danger', command = self._replay_press)
         self.replay_button.grid(row=3, column=0, padx=10, pady=10, sticky='nsew')       
   
         self.menu_button = ttk.Button(self.main_label, text='Menu', style='danger', command = self._menu_press)
-        self.menu_button.grid(row=3, column=1, padx=10, pady=10, sticky='nsew')          
+        self.menu_button.grid(row=3, column=1, padx=10, pady=10, sticky='nsew') 
+        
+        self.set_end("win", "resignation")     #test    
 
     def set_end(self, outcome: str, reason: str):
         
         self.title_text.set(f"You {outcome}!")
-        self.reaason_text.set(f"Reason: {reason}")
+        self.reaason_text.set(f"From {reason}")
         
         colorDict={
             "win":"success",
@@ -387,7 +417,8 @@ class EndPanel(ttk.Frame):
             "draw":"light"
         }
         
-        self.t1_label.configure(style=colorDict[outcome])
+        self.t1_label.configure(bootstyle=colorDict[outcome])
+        self.t2_label.configure(bootstyle=colorDict[outcome])
         
     def _replay_press(self):
         if self.on_search:
@@ -398,3 +429,6 @@ class EndPanel(ttk.Frame):
     def _menu_press(self):
         if self.on_menu:
             self.on_menu()
+            
+    def _chat_press(self, message: str):
+        pass #send queue chat
