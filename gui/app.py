@@ -62,6 +62,8 @@ class RootFrame(ttk.Frame):
                                     
         self.game = GameFrame(self,
                             on_side_panel=self._show_side_bar,
+                            on_search_panel=self._show_search,
+                            on_menu_panel=self._show_menu,
                             queue=self.queue)
         
         self.search = SearchFrame(self,
@@ -79,6 +81,7 @@ class RootFrame(ttk.Frame):
         self.is_in_game = is_in_game
         
     def _show_menu(self):
+        print("Trying to show menu")
         self.menu.lift()
         self.visible_frame = self.menu
 
@@ -101,13 +104,15 @@ class RootFrame(ttk.Frame):
         self.visible_frame.lift()
 
     def _show_search(self):
+        print("triyng to show search")
         self.search.lift()
         self.visible_frame = self.search
 
 
     def start(self):
-        self._show_menu()
-        self._show_search()
+        #self._show_menu()
+        #self._show_search()
+        self._show_game()
         self.parent_app.update()
         asyncio.create_task(self._fake_main_loop())
 

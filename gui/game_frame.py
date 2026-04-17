@@ -1,6 +1,7 @@
 import tkinter 
 from tkinter import ttk
 import ttkbootstrap as tb
+import tkinter.font as Font
 from ttkbootstrap.scrolled import ScrolledFrame
 from models import GUIToMainEvent
 import queue
@@ -19,16 +20,24 @@ class GameFrame(ttk.Frame):
     def __init__(self,
                 parent,
                 on_side_panel=None,
+                on_search_panel=None,
+                on_menu_panel=None,
                 queue:queue.Queue=None):
         super().__init__(parent)
 
         self.parent_app = parent
         self.on_side_panel = on_side_panel
+        self.on_search_panel = on_search_panel
+        self.on_menu_panel = on_menu_panel
         self.queue = queue
         
-        self.game_panel = GamePanel(self, on_side_panel=self.on_side_panel, queue=self.queue)
+        self.game_panel = GamePanel(self,
+                                    on_side_panel=self.on_side_panel,
+                                    on_menu=self.on_menu_panel,
+                                    on_search=self.on_search_panel,                                   
+                                    queue=self.queue)
         self.board_panel = BoardPanel(self)
-        self.end_panel = EndPanel(self)
+
 
         self._build()
     
@@ -62,7 +71,7 @@ class GameFrame(ttk.Frame):
 
         self.game_panel.grid(row=0, column=1, sticky='nsew')
         self.board_panel.grid(row=0, column=0, sticky='nsew')
-
+        
 
         
 
@@ -72,10 +81,14 @@ class GamePanel(ttk.Frame):
     def __init__(self,
                 parent,
                 on_side_panel=None,
+                on_menu=None,
+                on_search=None,
                 queue=None):
         super().__init__(parent)
 
         self.on_side_panel = on_side_panel
+        self.on_menu = on_menu
+        self.on_search = on_search
         self.queue = queue
 
         self.game_id = None
@@ -87,6 +100,8 @@ class GamePanel(ttk.Frame):
         self.game_chat_entry_text = tkinter.StringVar(value="Type Here")
         self.game_chat_text = tkinter.StringVar(value="This is chat\n")
         self.game_move_text = tkinter.StringVar(value="Dummy Text")
+        
+
 
         self._build()
 
@@ -167,7 +182,15 @@ class GamePanel(ttk.Frame):
         self.game_chat_entry = ttk.Entry(self.game_chat_label, textvariable=self.game_chat_entry_text)
         self.game_chat_entry.grid(row=1, column=0, padx=4, pady=4, sticky='nsew')
         self.game_chat_entry.bind("<Return>", self._chat_enter)
+        
 
+        self.end_panel = EndPanel(self.game_right_frame,
+                                  on_menu=self.on_menu,
+                                  on_search=self.on_search,
+                                  queue=self.queue)
+
+        self.end_panel.grid(row=0, column=0, rowspan=5, columnspan=2, sticky='nsew')
+        self.end_panel.lift()
 
     def add_chat_line(self, username: str, text: str):
 
@@ -308,6 +331,9 @@ class BoardPanel(ttk.Frame):
             print(str(e))
 
 
+
+
+
 class EndPanel(ttk.Frame):
     def __init__(self, parent, on_menu, on_search, queue:queue.Queue):
         super().__init__(parent)
@@ -315,13 +341,60 @@ class EndPanel(ttk.Frame):
         self.on_search = on_search
         self.queue = queue
         
+        self.title_text = tkinter.StringVar(value="You Blank")
+        self.reaason_text = tkinter.StringVar(value="Reason: blank")
+
+        self.title_font = Font.Font(family="Lexend", size=20, weight="bold")
+        self.reason_font = Font.Font(family="Lexend", size=15, weight="bold")
+
         self._build()
 
     def _build(self):
         
-        self.rowconfigure(index=0, weight=1)
-        self.rowconfigure(index=1, weight=1)
-        self.rowconfigure(index=2, weight=1)
-        self.rowconfigure(index=3, weight=1)
-        self.columnconfigure(index=0, weight=1)
-        self.columnconfigure(index=1, weight=1)
+        self.main_label = ttk.Label(self, bootstyle='bg')
+        self.main_label.place(relx=0, rely=0, relwidth=1, relheight=1)
+        
+        self.main_label.rowconfigure(index=0, weight=1)
+        self.main_label.rowconfigure(index=1, weight=1)
+        self.main_label.rowconfigure(index=2, weight=13)
+        self.main_label.rowconfigure(index=3, weight=2)
+        self.main_label.columnconfigure(index=0, weight=1)
+        self.main_label.columnconfigure(index=1, weight=1)
+        
+        self.t1_label = ttk.Label(self.main_label, bootstyle="primary", textvariable=self.title_text, font=self.title_font)
+        self.t1_label.grid(row=0, column=0, columnspan=2, ipadx=0, pady=5, sticky='n')
+
+        self.t2_label = ttk.Label(self.main_label, bootstyle="primary", textvariable=self.reaason_text, font=self.reason_font)
+        self.t2_label.grid(row=1, column=0, columnspan=2, padx=0, pady=0, sticky='n')
+        
+        self.chat_options_label_frame = ttk.Labelframe(self.main_label, bootstyle="light", text="Chat Options")
+        self.chat_options_label_frame.grid(row=2, column=0, columnspan=2, sticky='nsew')
+        
+        self.replay_button = ttk.Button(self.main_label, text='Replay', style='danger', command = self._replay_press)
+        self.replay_button.grid(row=3, column=0, padx=10, pady=10, sticky='nsew')       
+  
+        self.menu_button = ttk.Button(self.main_label, text='Menu', style='danger', command = self._menu_press)
+        self.menu_button.grid(row=3, column=1, padx=10, pady=10, sticky='nsew')          
+
+    def set_end(self, outcome: str, reason: str):
+        
+        self.title_text.set(f"You {outcome}!")
+        self.reaason_text.set(f"Reason: {reason}")
+        
+        colorDict={
+            "win":"success",
+            "lose":"danger",
+            "draw":"light"
+        }
+        
+        self.t1_label.configure(style=colorDict[outcome])
+        
+    def _replay_press(self):
+        if self.on_search:
+            print(f"REPLAY {self.on_search}")
+            self.on_search()
+    
+    
+    def _menu_press(self):
+        if self.on_menu:
+            self.on_menu()
