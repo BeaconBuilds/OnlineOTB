@@ -42,6 +42,11 @@ class GameFrame(ttk.Frame):
         self._build()
     
 
+    def set_end(self, outcome: str, reason: str):
+        self.game_panel.set_end(outcome, reason)
+        self.parent_app.set_game(False)
+
+
     def add_chat_line(self, username: str, text: str):
         self.game_panel.add_chat_line(username, text)
 
@@ -49,8 +54,7 @@ class GameFrame(ttk.Frame):
     def update_board(self, game_id: str):
         self.board_panel.update_board(game_id)
         self.game_panel._set_game_id(game_id)
-        if game_id:
-            self.parent_app.set_game(True)
+        self.parent_app.set_game(True)
 
 
     def set_turn(self, is_my_turn: bool):
@@ -68,9 +72,12 @@ class GameFrame(ttk.Frame):
         self.rowconfigure(index=0, weight=1)
         self.columnconfigure(index=0, weight=1)
         self.columnconfigure(index=1, weight=1)
-
+        
+        
         self.game_panel.grid(row=0, column=1, sticky='nsew')
+        self.game_panel.grid_propagate(False)
         self.board_panel.grid(row=0, column=0, sticky='nsew')
+        self.board_panel.grid_propagate(False)
         
 
         
@@ -101,6 +108,11 @@ class GamePanel(ttk.Frame):
         self.game_chat_text = tkinter.StringVar(value="This is chat\n")
         self.game_move_text = tkinter.StringVar(value="Dummy Text")
         
+        self.end_panel = EndPanel(self,
+                                  on_menu=self.on_menu,
+                                  on_search=self.on_search,
+                                  queue=self.queue)
+        
 
 
         self._build()
@@ -110,21 +122,32 @@ class GamePanel(ttk.Frame):
 
     def _build(self):
 
+        self.place(relx=0, rely=0, relwidth=1, relheight=1)
+        self.columnconfigure(index=0, weight=3)
+        self.columnconfigure(index=1, weight=3)
+        self.columnconfigure(index=2, weight=2)       
+        self.rowconfigure(index=0, weight=1)
+        self.rowconfigure(index=1, weight=1)
+        self.rowconfigure(index=2, weight=4)
+        self.rowconfigure(index=3, weight=1)
+        self.rowconfigure(index=4, weight=2)
 
-        self.game_right_frame = ttk.Frame(self, bootstyle= "bg")
-        self.game_right_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+        self.left_ui_frame = ttk.Frame(self, bootstyle='bg')
+        self.left_ui_frame.grid(row=0, column=0, rowspan=5, columnspan=2, sticky='nsew')
 
-        self.game_right_frame.columnconfigure(index=0, weight=1)
-        self.game_right_frame.columnconfigure(index=1, weight=1)
-        self.game_right_frame.columnconfigure(index=2, weight=6)       
-        self.game_right_frame.rowconfigure(index=0, weight=1)
-        self.game_right_frame.rowconfigure(index=1, weight=1)
-        self.game_right_frame.rowconfigure(index=2, weight=4)
-        self.game_right_frame.rowconfigure(index=3, weight=1)
-        self.game_right_frame.rowconfigure(index=4, weight=2)
-        self.game_right_frame.grid_propagate(False)        
+        self.end_panel.grid(row=0, column=0, rowspan=5, columnspan=2, sticky='nsew')
 
-        self.op_timer_label = ttk.Label(self.game_right_frame, background="#405C7C")
+
+        self.left_ui_frame.columnconfigure(index=0, weight=1)
+        self.left_ui_frame.columnconfigure(index=1, weight=1)     
+        self.left_ui_frame.rowconfigure(index=0, weight=1)
+        self.left_ui_frame.rowconfigure(index=1, weight=1)
+        self.left_ui_frame.rowconfigure(index=2, weight=4)
+        self.left_ui_frame.rowconfigure(index=3, weight=1)
+        self.left_ui_frame.rowconfigure(index=4, weight=2)
+        self.left_ui_frame.grid_propagate(False)        
+
+        self.op_timer_label = ttk.Label(self.left_ui_frame, background="#405C7C")
         self.op_timer_label.grid(row=0, column=0, columnspan=2, rowspan=2, padx=10, pady=10, sticky='nsew')
         self.op_timer_label.rowconfigure(0, weight=1)
         self.op_timer_label.columnconfigure(0, weight=1)
@@ -133,7 +156,7 @@ class GamePanel(ttk.Frame):
         self.op_floodgauge = ClockFloodGuage(self.op_timer_label, text="0:00", value=75)
         self.op_floodgauge.grid(row=0, column=0, columnspan=1, padx=4, pady=4, sticky='nsew')
 
-        self.game_move_labelFrame = ttk.LabelFrame(self.game_right_frame, text="Moves", style="danger")
+        self.game_move_labelFrame = ttk.LabelFrame(self.left_ui_frame, text="Moves", style="danger")
         self.game_move_labelFrame.grid(row=2, column=0, columnspan=2, padx=10, pady=10, sticky='nsew')
         self.game_move_labelFrame.grid_propagate(False)
         self.game_move_labelFrame.rowconfigure(index=0, weight=1)
@@ -142,15 +165,15 @@ class GamePanel(ttk.Frame):
         self.game_move_label = ttk.Label(self.game_move_labelFrame, textvariable=self.game_move_text)
         self.game_move_label.grid(row=0, column=0, padx=4, pady=4)
 
-        self.resign_button = ttk.Button(self.game_right_frame, text='Resign', style='danger', command = self._resign_press)
+        self.resign_button = ttk.Button(self.left_ui_frame, text='Resign', style='danger', command = self._resign_press)
         self.resign_button.grid(row=3, column=0, padx=10, pady=10, sticky='nsew')   
         self.resign_button.grid_propagate(False)
 
-        self.draw_button = ttk.Button(self.game_right_frame, text='Draw', style='danger', command = self._draw_press)
+        self.draw_button = ttk.Button(self.left_ui_frame, text='Draw', style='danger', command = self._draw_press)
         self.draw_button.grid(row=3, column=1, padx=10, pady=10, sticky='nsew')  
         self.draw_button.grid_propagate(False)    
 
-        self.my_timer_label = ttk.Label(self.game_right_frame, background="#405C7C")
+        self.my_timer_label = ttk.Label(self.left_ui_frame, background="#405C7C")
         self.my_timer_label.grid(row=4, column=0, columnspan=2, padx=10, pady=10, sticky='nsew')
         self.my_timer_label.rowconfigure(0, weight=1)
         self.my_timer_label.columnconfigure(0, weight=1)
@@ -159,11 +182,11 @@ class GamePanel(ttk.Frame):
         self.my_floodgauge = ClockFloodGuage(self.my_timer_label, text="4:12", value=20)
         self.my_floodgauge.grid(row=0, column=0, columnspan=1, padx=4, pady=4, sticky='nsew')       
 
-        self.game_top_menu_button = ttk.Button(self.game_right_frame, style="info", text="Menu", command=self._side_panel_press)
+        self.game_top_menu_button = ttk.Button(self, style="info", text="Menu", command=self._side_panel_press)
         self.game_top_menu_button.grid(row=0, column=2, padx=10, pady=10, sticky='nsew')
         self.game_top_menu_button.grid_propagate(False)
 
-        self.game_chat_label = ttk.Label(self.game_right_frame, background="#405C7C")
+        self.game_chat_label = ttk.Label(self, background="#405C7C")
         self.game_chat_label.grid(row=1, column=2, rowspan=4, padx=10, pady=10, sticky='nsew')
         self.game_chat_label.rowconfigure(index=0, weight=10)
         self.game_chat_label.rowconfigure(index=1, weight=1)
@@ -184,13 +207,8 @@ class GamePanel(ttk.Frame):
         self.game_chat_entry.bind("<Return>", self._chat_enter)
         
 
-        self.end_panel = EndPanel(self.game_right_frame,
-                                  on_menu=self.on_menu,
-                                  on_search=self.on_search,
-                                  queue=self.queue)
 
-        self.end_panel.grid(row=0, column=0, rowspan=5, columnspan=2, sticky='nsew')
-        self.end_panel.lift()
+
 
     def add_chat_line(self, username: str, text: str):
 
@@ -201,6 +219,7 @@ class GamePanel(ttk.Frame):
 
 
     def set_turn(self, isMyTurn: bool):
+        self.left_ui_frame.lift()
         self.isMyTurnG = isMyTurn
         self.lastMoveTimeG = time.time() * 1000
         if isMyTurn:
@@ -234,14 +253,16 @@ class GamePanel(ttk.Frame):
 
         if msTotal: self.my_floodgauge.maximum = msTotal
         self.my_floodgauge.configure(value = msLeft)
-        self.my_floodgauge.configure(text=f"{int(minutes):02}:{int(seconds):02}") 
-
+        self.my_floodgauge.configure(text=f"{int(minutes):02}:{int(seconds):02}")
+        
+    def set_end(self, outcome:str, reason:str):
+        self.end_panel.set_end(outcome, reason)
+        self.end_panel.lift()
 
 
     def _set_game_id(self, game_id):
         self.game_id = game_id
-        
-
+    
 
     def _resign_press(self):
         if self.game_id and self.queue:

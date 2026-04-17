@@ -19,6 +19,7 @@ class ChessLogic:
         self.is_game_over = False
         self.playerDraw = False
         self.winner = None
+        self.win_lose_draw = None
         self.gameEndReason = None
 
         self.makeSVG()
@@ -121,12 +122,14 @@ class ChessLogic:
         if status in ("aborted", "mate", "resign", "timeout", "outoftime", "insufficientMaterialClaim"):
             self.is_game_over = True
             self.winner = be.winner
+            self.win_lose_draw = "win" if self.winner == ("white" if self.color == chess.WHITE else "black") else "lose"
             self.gameEndReason = status
             self.playerDraw = False
             return True
         if status in ("stalemate", "draw", "unknownFnnish"):
             self.is_game_over = True
             self.winner = None
+            self.win_lose_draw = "draw"
             self.gameEndReason = status
             self.playerDraw = True
             return True

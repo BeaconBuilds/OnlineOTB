@@ -153,6 +153,7 @@ async def main():
 
             if boardEvent.winner:
                 state.is_in_game = False
+                app.game.set_end(logicDict[gameID].win_lose_draw, logicDict[gameID].gameEndReason)
                 #do winner code in here, display to gui, etc
         if boardEvent.eventType == "chatLine":
             app.game.add_chat_line(boardEvent.chatUsername, boardEvent.chatText)

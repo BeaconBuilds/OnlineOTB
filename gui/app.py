@@ -110,9 +110,7 @@ class RootFrame(ttk.Frame):
 
 
     def start(self):
-        #self._show_menu()
-        #self._show_search()
-        self._show_game()
+        self._show_menu()
         self.parent_app.update()
         asyncio.create_task(self._fake_main_loop())
 
@@ -120,7 +118,8 @@ class RootFrame(ttk.Frame):
         try:
             while self.parent_app.winfo_exists():
                 self.parent_app.update()
-                self.game.game_panel._clock_countdown()
+                if self.is_in_game:
+                    self.game.game_panel._clock_countdown()
                 await asyncio.sleep(.05)
         except tkinter.TclError:
             self._close_program()
